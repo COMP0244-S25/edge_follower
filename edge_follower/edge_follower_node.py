@@ -14,7 +14,7 @@ class EdgeFollowerNode(Node):
         super().__init__('edge_follower_node')
         
         # Constants
-        self.SAFETY_MARGIN = 0.5  # meters
+        self.SAFETY_MARGIN = 1.0  # meters
         self.INCREMENT_DISTANCE = 0.8  # meters
         self.UPDATE_RATE = 0.5  # seconds
         
