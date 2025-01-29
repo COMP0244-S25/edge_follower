@@ -15,7 +15,7 @@ class EdgeFollowerNode(Node):
         
         # Constants
         self.SAFETY_MARGIN = 1.0  # meters
-        self.INCREMENT_DISTANCE = 0.8  # meters
+        self.INCREMENT_DISTANCE = 0.7 # meters
         self.UPDATE_RATE = 0.5  # seconds
         
         # State variables
@@ -49,7 +49,7 @@ class EdgeFollowerNode(Node):
         self.get_logger().info('Edge Follower node initialized')
 
     def odom_callback(self, msg):
-        """Update current robot pose from odometry (in camera_init frame)"""
+        """Update current robot pose (x,y,theta) from odometry (in odom frame)"""
         self.is_odom_received = True
         self.current_x = msg.pose.pose.position.x
         self.current_y = msg.pose.pose.position.y
@@ -61,7 +61,7 @@ class EdgeFollowerNode(Node):
         self.current_orientation = math.atan2(siny_cosp, cosy_cosp)
 
     def transform_to_camera_init(self, point):
-        """Transform a point from base_link to camera_init frame"""
+        """Transform a point from livox to camera_init frame, which is our fixed world frame"""
         # Rotation matrix
         c = math.cos(self.current_orientation)
         s = math.sin(self.current_orientation)
@@ -73,7 +73,7 @@ class EdgeFollowerNode(Node):
         return np.array([x, y])
 
     def transform_to_base_link(self, point):
-        """Transform a point from camera_init to base_link frame"""
+        """Transform a point from camera_init to livox frame"""
         # Translate to origin
         dx = point[0] - self.current_x
         dy = point[1] - self.current_y
@@ -106,7 +106,7 @@ class EdgeFollowerNode(Node):
         if not self.current_edges:
             return None
             
-        # Robot is at origin in base_link frame
+        # Robot is at origin in livox frame
         robot_pos = np.array([0.0, 0.0])
         
         # First find the closest point on any edge segment
@@ -159,7 +159,7 @@ class EdgeFollowerNode(Node):
         # Vector from closest point to robot
         to_robot = robot_pos - closest_point
         
-        # Determine clockwise direction using cross product
+        # Determine cw direction using cross product
         cross_z = edge_direction[0] * to_robot[1] - edge_direction[1] * to_robot[0]
         moving_forward = cross_z > 0
         
@@ -235,7 +235,7 @@ class EdgeFollowerNode(Node):
         # Current waypoint
         if current_waypoint is not None:
             point_marker = Marker()
-            point_marker.header.frame_id = "base_link"
+            point_marker.header.frame_id = "livox"
             point_marker.header.stamp = self.get_clock().now().to_msg()
             point_marker.type = Marker.SPHERE
             point_marker.action = Marker.ADD
@@ -252,7 +252,7 @@ class EdgeFollowerNode(Node):
             # Closest point on edge (red)
             if hasattr(self, 'closest_edge_point'):
                 edge_point_marker = Marker()
-                edge_point_marker.header.frame_id = "base_link"
+                edge_point_marker.header.frame_id = "livox"
                 edge_point_marker.header.stamp = self.get_clock().now().to_msg()
                 edge_point_marker.type = Marker.SPHERE
                 edge_point_marker.action = Marker.ADD
@@ -269,7 +269,7 @@ class EdgeFollowerNode(Node):
             # Incremented point on edge (green)
             if hasattr(self, 'incremented_point'):
                 inc_point_marker = Marker()
-                inc_point_marker.header.frame_id = "base_link"
+                inc_point_marker.header.frame_id = "livox"
                 inc_point_marker.header.stamp = self.get_clock().now().to_msg()
                 inc_point_marker.type = Marker.SPHERE
                 inc_point_marker.action = Marker.ADD
@@ -284,7 +284,7 @@ class EdgeFollowerNode(Node):
                 self.waypoint_marker_pub.publish(inc_point_marker)        
         # Detected edges
         edge_marker = Marker()
-        edge_marker.header.frame_id = "base_link"
+        edge_marker.header.frame_id = "livox"
         edge_marker.header.stamp = self.get_clock().now().to_msg()
         edge_marker.type = Marker.LINE_LIST
         edge_marker.action = Marker.ADD
